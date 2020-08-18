@@ -1,4 +1,4 @@
-# Framtest interview test
+# Framtest Interview Test
 
 This interview framework includes a Docker containerized PHP & MySQL application called
 Example.  You may need to install Docker, WSL or  git-bash to run the example..  
