@@ -1,0 +1,62 @@
+version: "3.5"
+
+services:
+    web:
+        build:
+            context: web
+        working_dir: /code
+        volumes:
+            - web_sock:/sock
+            - ./web/code/cache:/code/cache:rw
+            - ./web/code:/code:ro
+            - ./web/env:/opt/apptmp:rw
+        environment:
+            APP_DEBUG: 1
+            APP_VERSION: ${VERSION}
+            APP_ENVIRONMENT: ${ENV}
+            APP_TZ: America/Phoenix
+            DATA_PATH: /opt/apptmp/
+            DB_HOST: ${APP}${ENV}_mysql_1
+            DB_SCHEMA: ${DB_SCHEMA}
+            DB_PORT: 3306
+            DB_CHARSET: utf8
+            DB_USER: example_user
+            DB_PASS: azRh4BbjUEBCrvtz0vE9hxw1Fs7yjmIp
+            MASTER_TOKEN: WS6n9NDIympeG/DxeKButss3oEdJESbG
+
+    web-nginx:
+        build:
+            context: web-nginx
+        ports:
+            - "${WEB_PORT}:80"
+        volumes:
+            - web_sock:/sock
+            - ./web/code:/code:ro
+
+    mysql:
+        build:
+            context: mysql
+        ports:
+            - "${DATABASE_PORT}:3306"
+        volumes:
+            - datadbmysql:/datadb
+            - ./mysql/build:/srv/build
+            - ./mysql/scripts:/srv/scripts
+        environment:
+            DB_SCHEMA: ${DB_SCHEMA}
+            ROOT_PASS: THyQF1Cnk54wTGbSK1lMB0J4HsMWetCq
+            ADMIN_ID: example_admin
+            ADMIN_PASS: r3JygrkhkQd6txqOJBpXGElT2cZl+Mce
+            USER_ID: example_user
+            USER_PASS: azRh4BbjUEBCrvtz0vE9hxw1Fs7yjmIp
+
+volumes:
+    datadbmysql:
+    web_sock:
+
+networks:
+    default:
+        name: "${APP}${ENV}"
+        ipam:
+            config:
+                - subnet: ${NETWORK_SUBNET}

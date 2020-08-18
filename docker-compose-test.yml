@@ -1,0 +1,63 @@
+version: "3.5"
+
+services:
+    web:
+        build:
+            context: web
+        working_dir: /code
+        volumes:
+            - web_sock:/sock
+            - ./web/code/cache:/code/cache:rw
+            - ./web/code:/code:ro
+            - ./web/env:/opt/apptmp:rw
+        environment:
+            IS_TESTING: 1
+            APP_DEBUG: 1
+            APP_VERSION: ${VERSION}
+            APP_ENVIRONMENT: ${ENV}
+            APP_TZ: America/Los_Angeles
+            DATA_PATH: /opt/apptmp/
+            DB_HOST: ${APP}${ENV}test_mysql_1
+            DB_SCHEMA: ${DB_SCHEMA}
+            DB_PORT: 3306
+            DB_CHARSET: utf8mb4
+            DB_USER: example_admin
+            DB_PASS: YEGQQy8IhCXrUFzqU7hmHrVTSnaDWRTL
+            MASTER_TOKEN: bTCd7CtU914D/7uzobyk1GmbzlgN6Z7e
+            TEST_URL: "http://${APP}${ENV}test_web-nginx_1"
+
+    web-nginx:
+        build:
+            context: web-nginx
+        volumes:
+            - web_sock:/sock
+            - ./web/code:/code:ro
+
+    mysql:
+        build:
+            context: mysql
+        ports:
+            # Allow the database to be accessed when testing with "--no-tear-down"
+            - "8999:3306"
+        volumes:
+            - datadbmysql:/datadb
+            - ./mysql/build:/srv/build
+            - ./mysql/scripts:/srv/scripts
+        environment:
+            DB_SCHEMA: ${DB_SCHEMA}
+            ROOT_PASS: GROnJ0nqlopEbEhdmKkOeyaNJECzJf7u
+            ADMIN_ID: example_admin
+            ADMIN_PASS: YEGQQy8IhCXrUFzqU7hmHrVTSnaDWRTL
+            USER_ID: example_user
+            USER_PASS: 6eecgUOzYedyuRjMyax6HPjiKhO4AZXy
+
+volumes:
+    datadbmysql:
+    web_sock:
+
+networks:
+    default:
+        name: "${APP}${ENV}test"
+        ipam:
+            config:
+                - subnet: ${TEST_NETWORK_SUBNET}

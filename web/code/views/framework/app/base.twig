@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Example</title>
+        <meta name="description" content="Example">
+        <link href="/favicon.ico" rel="icon" type="image/x-icon" />
+
+        <!-- Styles -->
+        <link rel="stylesheet" href="/vendor/bootstrap/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/assets/css/main.css?v={{ version }}">
+        
+        <!-- Scripts -->
+        <script src="/vendor/jquery/js/jquery.js"></script>
+        <script src="/vendor/bootstrap/js/bootstrap.min.js"></script>
+        <script src="/vendor/axios/js/axios.min.js"></script>
+        <script src="/vendor/lodash/js/lodash.min.js"></script>
+        <script src="/assets/js/framework/framework.js?v={{ version }}"></script>
+        <script src="/assets/js/app/app.js?v={{ version }}"></script>
+    </head>
+
+    <body id="body">
+        <main id="main">
+            {% block content %}{% endblock %}
+        </main>
+    </body>
+</html>
