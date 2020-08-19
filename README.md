@@ -3,10 +3,10 @@
 This interview framework includes a Docker containerized PHP & MySQL application called
 Example.  You may need to install Docker, WSL or  git-bash to run the example.
 
-1. Clone this repo into a new repo of your own.
+1. Clone/fork this repo and into  a new repo of your own with the contents.
 2. Run the instructions in the Setup section to build the framework.
 3. Complete the user stories below using PHP and MySQL in the development process.
-4. Email us a link to your project with the subject **"Frametest Interview Repo"**.
+4. Email us a pointer to your project repo with the subject **"Frametest Interview Repo"**.
 
 
 ## Setup
