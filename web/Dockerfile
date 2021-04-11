@@ -41,7 +41,7 @@ RUN ln -snf /usr/share/zoneinfo/UTC /etc/localtime && \
     # Setup view cache
     mkdir /code/cache/views && \
     # Setup all cache perms
-    chown -R www-data:www-data /code/cache
+    chown -R www-data:www-data /code/cache/
 
 # Complains about missing config file from mysqli install, so hack to get it to work.
 RUN docker-php-ext-install openssl; exit 0

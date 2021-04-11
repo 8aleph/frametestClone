@@ -1,4 +1,5 @@
 #!/bin/bash
-chown www-data:www-data -R /code/cache
+cd "$(dirname "${0}")"
+chown www-data:www-data -R /code/cache/
 exec "$@"
 

@@ -1,8 +1,8 @@
 #!/bin/sh
 
-cd /
+cd "$(dirname "${0}")"
 
-chown mysql:mysql /datadb
+chown mysql:mysql ./datadb
 rm -rf /datadb/*
 
 runuser -u mysql mysqld -- --initialize --daemonize=false --skip-networking
