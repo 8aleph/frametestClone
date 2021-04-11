@@ -8,7 +8,7 @@ chmod +x web/code/vendor/phpunit/phpunit/phpunit
 
 # This is a workaround for a difference of opinion between Docker and WSL
 realPwd() {
-  pwd  | sed -e 's/\\/\//g' -e 's/://'
+  pwd  | sed -e '\s/\\/\//g' -e '\s/://'
 }
 
 ENV=$(cat .env)
@@ -82,7 +82,7 @@ testDockerComposeRun() {
 }
 
 clearContainerCache() {
-    initDockerComposeRun web bash /scripts/clear-container-cache.sh
+    docker-compose run web bash ./scripts/clear-container-cache.sh
 }
 
 for ARG in "$@"; do
@@ -225,7 +225,6 @@ EOF
             exit 1
           fi
         done
-
         clearContainerCache
         mkdir -p web-nginx/code
         testDockerCompose build 2>&1 | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
@@ -246,7 +245,7 @@ EOF
             exit $test_result
         fi
 
-        testDockerCompose stop 2>&1 | | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+        testDockerCompose stop 2>&1 | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
 
         # Cleanup docker related leftovers
         docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk '{print $1}')
