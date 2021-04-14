@@ -9,8 +9,18 @@ chmod +x ./web/code/vendor/phpunit/phpunit/phpunit
 
 # This is a workaround for a difference of opinion between Docker and WSL
 realPwd() {
-  pwd  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+  pwd  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g'
 }
+
+
+winpath=$(echo $MSYS2_WINPATH | tr ";" "\n" | sed -e 's/\\/\\\\/g' | xargs -I {} cygpath -u {})
+unixpath=''
+
+for pth in $winpath; do unixpath+=$(echo $pth)":"; done
+
+export PATH=$(echo $PATH:$unixpath | sed -e 's/:$//g')
+unset unixpath
+unset winpath
 
 ENV=$(cat .env)
 
@@ -56,18 +66,18 @@ case "$(uname -s)" in
 esac
 
 initDockerCompose() {
-    docker-compose -f docker-compose.yml -p build $PROJECT $@
+    docker-compose -f docker-compose.yml -p build "$PROJECT" "$@"
 }
 
 
 initDockerComposeRun() {
-     docker-compose -f docker-compose.yml -p $PROJECT run --rm $@
+     docker-compose -f docker-compose.yml -p "$PROJECT" run --rm "$@"
 }
 
 initDockerComposeDown() {
-    docker-compose -f docker-compose.yml -p $PROJECT kill
-    docker-compose -f docker-compose.yml -p $PROJECT rm
-    docker-compose -f docker-compose.yml -p $PROJECT down -v --remove-orphans $@
+    docker-compose -f docker-compose.yml -p "$PROJECT" kill
+    docker-compose -f docker-compose.yml -p "$PROJECT" rm
+    docker-compose -f docker-compose.yml -p "$PROJECT" down -v --remove-orphans "$@"
 }
 
 initDockerComposeBuild() {
@@ -75,11 +85,11 @@ initDockerComposeBuild() {
 }    
 
 testDockerCompose() {
-    docker-compose -f docker-compose-test.yml -p "${PROJECT}test" $@
+    docker-compose -f docker-compose-test.yml -p "${PROJECT}test" "$@"
 }
 
 testDockerComposeRun() {
-    docker-compose -f docker-compose-test.yml -p "${PROJECT}test" run --rm $@
+    docker-compose -f docker-compose-test.yml -p "${PROJECT}test" run --rm "$@"
 }
 
 clearContainerCache() {
@@ -87,19 +97,19 @@ clearContainerCache() {
 }
 
 for ARG in "$@"; do
-    if [ x$SUBCOMMAND != x ]; then
+    if [ x"$SUBCOMMAND" != x ]; then
         SUBCOMMAND_ARGS[${#SUBCOMMAND_ARGS[@]}]="$ARG"
-    elif [ x$in_env = xtrue ]; then
+    elif [ x"$in_env" = xtrue ]; then
         eval "export $ARG"
         in_env=false
-    elif [ x$ARG = x-v ] || [ x$ARG = x--verbose ]; then
+    elif [ x"$ARG" = x-v ] || [ x"$ARG" = x--verbose ]; then
         set -x
-    elif [ x$ARG = x-e ] || [ x$ARG = x--env ]; then
+    elif [ x"$ARG" = x-e ] || [ x"$ARG" = x--env ]; then
         in_env=true
-    elif [ x$ARG = x-h ] || [ x$ARG = x--help ]; then
+    elif [ x"$ARG" = x-h ] || [ x"$ARG" = x--help ]; then
         SUBCOMMAND=help
     else
-        SUBCOMMAND=$ARG
+        SUBCOMMAND="$ARG"
     fi
 done
 
@@ -107,10 +117,10 @@ case "$SUBCOMMAND" in
     shell)
         SERVICE_NAME=
         IS_TEST=0
-        for arg in "${SUBCOMMAND_ARGS[x@]}"; do
-          if [ "x$arg" = x--test ]; then
+        for arg in "${SUBCOMMAND_ARGS[#@]}"; do
+          if [ "#$arg" = x--test ]; then
             IS_TEST=1
-          elif [ "x$arg" = x--help ]; then
+          elif [ "#$arg" = x--help ]; then
             cat <<EOF
 Usage:
 bash haz shell [--test] [SERVICE_NAME]
@@ -139,9 +149,9 @@ EOF
         CONTAINER_NAME="${PROJ}_${SERVICE_NAME}_1"
 
         if [ $WINPTY = 1 ]; then
-            winpty docker exec -it $CONTAINER_NAME //bin/bash
+            winpty docker exec -it "$CONTAINER_NAME" //bin/bash
         else
-            docker exec -it $CONTAINER_NAME //bin/bash
+            docker exec -it "$CONTAINER_NAME" //bin/bash
         fi
         ;;
     composer)
@@ -152,16 +162,16 @@ EOF
         # Careful when running this command. It will only remove generated
         # containers/networks but will purge ALL dangling images/volumes
         echo "> Removing containers:"
-        docker rm -f $(docker ps -qa --no-trunc --filter "name=${PROJECT}") 2>/dev/null
+        docker rm -f "$(docker ps -qa --no-trunc --filter "name=${PROJECT}")" >2 /dev/null
 
         echo -e "\n> Removing dangling volumes:"
-        docker volume rm $(docker volume ls -q --filter "dangling=true") 2>/dev/null
+        docker volume rm $(docker volume ls -q --filter "dangling=true")  >2 /dev/null
         
         echo -e "\n> Removing networks:"
-        docker network rm $(docker network ls -q --filter "name=${PROJECT}") 2>/dev/null
+        docker network rm $(docker network ls -q --filter "name=${PROJECT}") >2 /dev/null
         
         echo -e "\n> Removing dangling images:"
-        docker rmi -f $(docker images -q --no-trunc --filter "dangling=true") 2>/dev/null
+        docker rmi -f $(docker images -q --no-trunc --filter "dangling=true") 2> /dev/null
         echo -e "\n> Done cleaning"
         ;;
     setup)
@@ -177,21 +187,21 @@ EOF
         
         initDockerComposeDown
         initDockerComposeBuild
-        initDockerComposeRun mysql sh //srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+        initDockerComposeRun mysql sh /srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
         ;;
     start)
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS[@]}"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS[$@]}"
         docker ps -a
         ;;
     stop)
-        initDockerComposeDown "${SUBCOMMAND_ARGS[@]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS[$@]}"
         ;;
     reset)
-        initDockerComposeDown "${SUBCOMMAND_ARGS[@]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS[$@]}"
 
-        initDockerComposeRun mysql sh ./srv/scripts/init.sh
+        initDockerComposeRun mysql  sh ./srv/scripts/init.sh
         
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS[@]}"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS[$@]}"
         ;;
     reset-test)
         initDockerComposeDown  "${PROJECT}test"
@@ -203,7 +213,7 @@ EOF
     test)
         reset_db=1
         no_tear_down=0
-        for arg in "${SUBCOMMAND_ARGS[@]}"; do
+        for arg in "${SUBCOMMAND_ARGS["${@}"]}"; do
           if [ "x$arg" = x--no-reset-db ]; then
             reset_db=0
           elif [ "x$arg" = x--no-tear-down ]; then
@@ -231,7 +241,7 @@ EOF
 
         if [ x$reset_db != x0 ]; then
             echo -e "\n> Rebuilding test db"
-            testDockerComposeRun mysql sh //srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+            testDockerComposeRun mysql  sh //srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
         fi
 
         testDockerCompose up -d 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'

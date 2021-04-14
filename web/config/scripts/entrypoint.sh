@@ -1,5 +1,5 @@
 #!/bin/bash
-cd "$(dirname "${0}")"
+cd "$(dirname [pwd])"
 chown www-data:www-data -R /code/cache/
 exec "$@"
 

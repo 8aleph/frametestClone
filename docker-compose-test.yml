@@ -6,7 +6,7 @@ services:
             context: web
         working_dir: /code
         volumes:
-            - web_sock:/sock
+            - /web_sock:/sock
             - ./web/code/cache:/code/cache:rw
             - ./web/code:/code:ro
             - ./web/env:/opt/apptmp:rw
@@ -40,7 +40,7 @@ services:
             # Allow the database to be accessed when testing with "--no-tear-down"
             - "8999:3306"
         volumes:
-            - datadbmysql:/datadb
+            - ./datadbmysql:/datadb
             - ./mysql/build:/srv/build
             - ./mysql/scripts:/srv/scripts
         environment:
