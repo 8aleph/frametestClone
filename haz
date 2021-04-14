@@ -13,14 +13,14 @@ realPwd() {
 }
 
 
-winpath=$(echo $MSYS2_WINPATH | tr ";" "\n" | sed -e 's/\\/\\\\/g' | xargs -I {} cygpath -u {})
-unixpath=''
+# winpath=$(echo $MSYS2_WINPATH | tr ";" "\n" | sed -e 's/\\/\\\\/g' | xargs -I {} cygpath -u {})
+# unixpath=''
 
-for pth in $winpath; do unixpath+=$(echo $pth)":"; done
+# for pth in $winpath; do unixpath+=$(echo $pth)":"; done
 
-export PATH=$(echo $PATH:$unixpath | sed -e 's/:$//g')
-unset unixpath
-unset winpath
+# export PATH=$(echo $PATH:$unixpath | sed -e 's/:$//g')
+# unset unixpath
+# unset winpath
 
 ENV=$(cat .env)
 
@@ -145,13 +145,14 @@ EOF
         else
             PROJ="${PROJECT}"
         fi
+        
 
         CONTAINER_NAME="${PROJ}_${SERVICE_NAME}_1"
 
         if [ $WINPTY = 1 ]; then
             winpty docker exec -it "$CONTAINER_NAME" //bin/bash
         else
-            docker exec -it "$CONTAINER_NAME" //bin/bash
+            docker exec --mount -it "$CONTAINER_NAME" //bin/bash
         fi
         ;;
     composer)
@@ -190,18 +191,18 @@ EOF
         initDockerComposeRun mysql sh /srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
         ;;
     start)
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS[$@]}"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS["${@}"]}"
         docker ps -a
         ;;
     stop)
-        initDockerComposeDown "${SUBCOMMAND_ARGS[$@]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS["${@}"]}"
         ;;
     reset)
-        initDockerComposeDown "${SUBCOMMAND_ARGS[$@]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS["${@}"]}"
 
         initDockerComposeRun mysql  sh ./srv/scripts/init.sh
         
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS[$@]}"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS["${@}"]}"
         ;;
     reset-test)
         initDockerComposeDown  "${PROJECT}test"
@@ -211,14 +212,17 @@ EOF
         testDockerCompose up -d
         ;;
     test)
+    
         reset_db=1
         no_tear_down=0
-        for arg in "${SUBCOMMAND_ARGS["${@}"]}"; do
-          if [ "x$arg" = x--no-reset-db ]; then
+        echo ${SUBCOMMAND_ARGS[${@}]}
+        for arg in ${SUBCOMMAND_ARGS[$*]}; do
+          if [ 
+           "x--${arg}" == 'x--no-reset-db' ]; then
             reset_db=0
-          elif [ "x$arg" = x--no-tear-down ]; then
+          elif [ "x--${arg}" == 'x--noTearDown' ]; then
             no_tear_down=1
-          elif [ "x$arg" = x--help ]; then
+          elif [ "x--${arg}" == 'x--help' ]; then
             cat <<EOF
 Usage:
   bash haz test [--web] [--no-reset-db]
@@ -254,6 +258,7 @@ EOF
             # This is used for when you want to debug the test containers
             exit $test_result
         fi
+
 
         testDockerCompose stop 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
 
