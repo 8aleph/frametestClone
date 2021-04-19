@@ -213,7 +213,7 @@ EOF
     
         reset_db=1
         no_tear_down=0
-         for arg in ${SUBCOMMAND_ARGS["$@]"}; do
+         for arg in $SUBCOMMAND_ARGS[{$@}]; do
           if ["x--${arg}" == 'x--no-reset-db' ]; then
             reset_db=0
           elif [ "x--${arg}" == 'x--noTearDown' ]; then
