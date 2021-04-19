@@ -152,7 +152,7 @@ EOF
         if [ $WINPTY = 1 ]; then
             winpty docker exec -it "$CONTAINER_NAME" //bin/bash
         else
-            docker exec --mount "$(pwd)" -it "$CONTAINER_NAME" //bin/bash
+            docker exec -it "$CONTAINER_NAME" //bin/bash
         fi
         ;;
     composer)
@@ -206,7 +206,7 @@ EOF
     reset-test)
         initDockerComposeDown  "${PROJECT}test"
 
-        testDockerComposeRun mysql sh "$(real-pwd)/srv/scripts/init.sh" 
+        testDockerComposeRun mysql sh "$(pwd)/srv/scripts/init.sh" 
         testDockerCompose up -d
         ;;
     test)
@@ -237,16 +237,16 @@ EOF
         done
         clearContainerCache
         mkdir -p web-nginx/code
-        testDockerCompose build 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
+        testDockerCompose build 2>&1
         if [ x$reset_db != x0 ]; then
             echo -e "\n> Rebuilding test db"
-            testDockerComposeRun mysql  sh //srv/scripts/init.sh 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
+            testDockerComposeRun mysql  sh "$(pwd)/srv/scripts/init.sh" 2>&1 
         fi
 
-        testDockerCompose up -d 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
+        testDockerCompose start -d 2>&1
 
         echo -e "\n> Running Web Test Suite"
-        testDockerComposeRun web ./vendor/phpunit/phpunit/phpunit --testdox --do-not-cache-result --testsuite Unit,Integration,Functional
+        testDockerComposeRun web "$(pwd)/vendor/phpunit/phpunit/phpunit" --testdox --do-not-cache-result --testsuite Unit,Integration,Functional
         test_result=$?
 
         if [ $no_tear_down = "1" ]; then
@@ -255,7 +255,7 @@ EOF
         fi
 
 
-        testDockerCompose stop 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
+        testDockerCompose stop 2>&1 
 
         # Cleanup docker related leftovers
         docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk '{print $1}')
