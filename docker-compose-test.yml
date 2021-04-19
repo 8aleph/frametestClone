@@ -20,7 +20,7 @@ services:
             DB_HOST: ${APP}${ENV}test_mysql_1
             DB_SCHEMA: ${DB_SCHEMA}
             DB_PORT: 3306
-            DB_CHARSET: utf8
+            DB_CHARSET: utf8mb4
             DB_USER: example_admin
             DB_PASS: YEGQQy8IhCXrUFzqU7hmHrVTSnaDWRTL
             MASTER_TOKEN: bTCd7CtU914D/7uzobyk1GmbzlgN6Z7e

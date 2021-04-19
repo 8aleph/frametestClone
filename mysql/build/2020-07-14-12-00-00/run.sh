@@ -1,4 +1,4 @@
-#!/bin/sh
+﻿#!/bin/sh
 
 # Base root
 cd /srv/build/2020-07-14-12-00-00

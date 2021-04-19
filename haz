@@ -1,4 +1,5 @@
 #!/bin/bash
+#set -e	
 
 export MSYS_NO_PATHCONV=1
 
@@ -6,23 +7,18 @@ export MSYS_NO_PATHCONV=1
 cd "$(dirname "${0}")" || exit
 
 chmod +x ./web/code/vendor/phpunit/phpunit/phpunit
-
+echo -e $(pwd)
 # This is a workaround for a difference of opinion between Docker and WSL
 realPwd() {
-  pwd  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g'
+ temp=$( pwd | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/')
+ echo "$temp"
 }
+testRealPwd=$(realPwd)
+echo "realPwd $testRealPwd"
 
+ENV="$(printenv)"
+echo $ENV
 
-# winpath=$(echo $MSYS2_WINPATH | tr ";" "\n" | sed -e 's/\\/\\\\/g' | xargs -I {} cygpath -u {})
-# unixpath=''
-
-# for pth in $winpath; do unixpath+=$(echo $pth)":"; done
-
-# export PATH=$(echo $PATH:$unixpath | sed -e 's/:$//g')
-# unset unixpath
-# unset winpath
-
-ENV=$(cat .env)
 
 if [ -z "$ENV" ]
 then
@@ -53,8 +49,11 @@ set +a
 
 PROJECT=${APP}${ENV}
 
+echo 'project is ' "${PROJECT}"
+
 SUBCOMMAND=
 declare -a SUBCOMMAND_ARGS
+
 
 case "$(uname -s)" in
     MINGW32*|MINGW64*)
@@ -93,9 +92,10 @@ testDockerComposeRun() {
 }
 
 clearContainerCache() {
-    initDockerComposeRun web bash ./scripts/clear-container-cache.sh
+    initDockerComposeRun web bash "$(pwd)/scripts/clear-container-cache.sh"
 }
 
+echo " ** {$@}  ** " 
 for ARG in "$@"; do
     if [ x"$SUBCOMMAND" != x ]; then
         SUBCOMMAND_ARGS[${#SUBCOMMAND_ARGS[@]}]="$ARG"
@@ -117,10 +117,10 @@ case "$SUBCOMMAND" in
     shell)
         SERVICE_NAME=
         IS_TEST=0
-        for arg in "${SUBCOMMAND_ARGS[#@]}"; do
-          if [ "#$arg" = x--test ]; then
+        for arg in SUBCOMMAND_ARGS[$@]; do
+          if [ "#x$arg" == "#"x--test ]; then
             IS_TEST=1
-          elif [ "#$arg" = x--help ]; then
+          elif [ "#x$arg" == "#"x--help ]; then
             cat <<EOF
 Usage:
 bash haz shell [--test] [SERVICE_NAME]
@@ -152,7 +152,7 @@ EOF
         if [ $WINPTY = 1 ]; then
             winpty docker exec -it "$CONTAINER_NAME" //bin/bash
         else
-            docker exec --mount -it "$CONTAINER_NAME" //bin/bash
+            docker exec --mount "$(pwd)" -it "$CONTAINER_NAME" //bin/bash
         fi
         ;;
     composer)
@@ -188,37 +188,33 @@ EOF
         
         initDockerComposeDown
         initDockerComposeBuild
-        initDockerComposeRun mysql sh /srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+        initDockerComposeRun mysql sh ./srv/scripts/init.sh 2>&1 
         ;;
     start)
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS["${@}"]}"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS[${@}]}"
         docker ps -a
         ;;
     stop)
-        initDockerComposeDown "${SUBCOMMAND_ARGS["${@}"]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS[${@}]}"
         ;;
     reset)
-        initDockerComposeDown "${SUBCOMMAND_ARGS["${@}"]}"
+        initDockerComposeDown "${SUBCOMMAND_ARGS[${@}]}"
 
-        initDockerComposeRun mysql  sh ./srv/scripts/init.sh
-        
-        initDockerComposeRun -d "${SUBCOMMAND_ARGS["${@}"]}"
+        initDockerComposeRun mysql  sh "$(pwd)/srv/scripts/init.sh"
+        initDockerComposeRun -d "${SUBCOMMAND_ARGS[${@}]}"
         ;;
     reset-test)
         initDockerComposeDown  "${PROJECT}test"
 
-        testDockerComposeRun mysql sh ./srv/scripts/init.sh
-
+        testDockerComposeRun mysql sh "$(real-pwd)/srv/scripts/init.sh" 
         testDockerCompose up -d
         ;;
     test)
     
         reset_db=1
         no_tear_down=0
-        echo ${SUBCOMMAND_ARGS[${@}]}
-        for arg in ${SUBCOMMAND_ARGS[$*]}; do
-          if [ 
-           "x--${arg}" == 'x--no-reset-db' ]; then
+         for arg in ${SUBCOMMAND_ARGS["$@]"}; do
+          if ["x--${arg}" == 'x--no-reset-db' ]; then
             reset_db=0
           elif [ "x--${arg}" == 'x--noTearDown' ]; then
             no_tear_down=1
@@ -241,14 +237,13 @@ EOF
         done
         clearContainerCache
         mkdir -p web-nginx/code
-        testDockerCompose build 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
-
+        testDockerCompose build 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
         if [ x$reset_db != x0 ]; then
             echo -e "\n> Rebuilding test db"
-            testDockerComposeRun mysql  sh //srv/scripts/init.sh 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+            testDockerComposeRun mysql  sh //srv/scripts/init.sh 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
         fi
 
-        testDockerCompose up -d 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+        testDockerCompose up -d 2>&1  | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
 
         echo -e "\n> Running Web Test Suite"
         testDockerComposeRun web ./vendor/phpunit/phpunit/phpunit --testdox --do-not-cache-result --testsuite Unit,Integration,Functional
@@ -260,7 +255,7 @@ EOF
         fi
 
 
-        testDockerCompose stop 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+        testDockerCompose stop 2>&1 | sed -e 's/^/#/' -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' -e 's/\n/ /g'
 
         # Cleanup docker related leftovers
         docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk '{print $1}')
