@@ -1,4 +1,4 @@
-FROM php:7.4.1-fpm
+﻿FROM php:7.4.1-fpm
 
 COPY *.conf /usr/local/etc/php-fpm.d/
 
@@ -50,6 +50,6 @@ RUN cp /usr/src/php/ext/openssl/config0.m4 /usr/src/php/ext/openssl/config.m4 &&
 
 ADD code /code
 
-ENTRYPOINT [ "bash", "/scripts/entrypoint.sh" ]
+ENTRYPOINT [ "bash",  `$(pwd)/scripts/entrypoint.sh` ]
 
 CMD [ "php-fpm" ]

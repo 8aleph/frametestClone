@@ -10,9 +10,11 @@ chmod +x ./web/code/vendor/phpunit/phpunit/phpunit
 echo -e $(pwd)
 # This is a workaround for a difference of opinion between Docker and WSL
 realPwd() {
- temp=$( pwd | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/')
+ temp=$( pwd | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/' )
  echo "$temp"
 }
+echo "pwd $(pwd)"
+
 testRealPwd=$(realPwd)
 echo "realPwd $testRealPwd"
 
@@ -98,7 +100,8 @@ clearContainerCache() {
 echo " ** {$@}  ** " 
 for ARG in "$@"; do
     if [ x"$SUBCOMMAND" != x ]; then
-        SUBCOMMAND_ARGS[${#SUBCOMMAND_ARGS[@]}]="$ARG"
+        SUBCOMMAND_ARGS["${#SUBCOMMAND_ARGS[@]}"]="$ARG"
+        echo ${SUBCOMMAND_ARGS}
     elif [ x"$in_env" = xtrue ]; then
         eval "export $ARG"
         in_env=false
@@ -150,14 +153,16 @@ EOF
         CONTAINER_NAME="${PROJ}_${SERVICE_NAME}_1"
 
         if [ $WINPTY = 1 ]; then
+            ECHO 'WINPTY'
             winpty docker exec -it "$CONTAINER_NAME" //bin/bash
         else
+            echo 'no WINPTY'
             docker exec -it "$CONTAINER_NAME" //bin/bash
         fi
         ;;
     composer)
         # Usage: ./haz composer update --ignore-platform-reqs
-        docker run --rm --interactive --volume "$(real-pwd)/web/code":/app composer:1.8 "${SUBCOMMAND_ARGS[@]}"
+        docker run --rm --interactive --volume "$(pwd)/web/code":/app composer:1.8 "${#SUBCOMMAND_ARGS[@]}"
         ;;  
     clean)
         # Careful when running this command. It will only remove generated
@@ -213,12 +218,12 @@ EOF
     
         reset_db=1
         no_tear_down=0
-         for arg in $SUBCOMMAND_ARGS[{$@}]; do
+         for arg in SUBCOMMAND_ARGS[{$@}]}; do
           if ["x--${arg}" == 'x--no-reset-db' ]; then
             reset_db=0
-          elif [ "x--${arg}" == 'x--noTearDown' ]; then
+          elif [ "x${arg}" == 'x--noTearDown' ]; then
             no_tear_down=1
-          elif [ "x--${arg}" == 'x--help' ]; then
+          elif [ "x${arg}" == 'x--help' ]; then
             cat <<EOF
 Usage:
   bash haz test [--web] [--no-reset-db]
@@ -246,7 +251,8 @@ EOF
         testDockerCompose start -d 2>&1
 
         echo -e "\n> Running Web Test Suite"
-        testDockerComposeRun web "$(pwd)/vendor/phpunit/phpunit/phpunit" --testdox --do-not-cache-result --testsuite Unit,Integration,Functional
+        testDockerComposeRun web "$(pwd)/vendor/phpunit/phpunit/phpunit" --testdox --do-not-cache-result --testsuite 
+        Unit,Integration,Functional
         test_result=$?
 
         if [ $no_tear_down = "1" ]; then
@@ -258,7 +264,7 @@ EOF
         testDockerCompose stop 2>&1 
 
         # Cleanup docker related leftovers
-        docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk '{print $1}')
+        docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk $"(print $1)")
         docker network rm "${PROJECT}test"
         clearContainerCache
 

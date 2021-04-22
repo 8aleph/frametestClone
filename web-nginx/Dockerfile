@@ -1,4 +1,4 @@
-FROM nginx:latest
+﻿FROM nginx:latest
 
 ADD ./config/ /
 ADD config/etc/nginx/nginx.conf /etc/nginx/nginx.conf
