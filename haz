@@ -90,11 +90,11 @@ testDockerCompose() {
 }
 
 testDockerComposeRun() {
-    docker-compose -f docker-compose-test.yml -p "${PROJECT}test" run --rm "$@"
+    MSYS_NO_PATHCONV=1 docker-compose -f -v `/$(pwd):/` docker-compose-test.yml -p "${PROJECT}test" run --rm "$@"
 }
 
 clearContainerCache() {
-    initDockerComposeRun web bash "$(pwd)/scripts/clear-container-cache.sh"
+    initDockerComposeRun web bash sh "$(pwd)/scripts/clear-container-cache.sh"
 }
 
 echo " ** {$@}  ** " 
@@ -193,7 +193,7 @@ EOF
         
         initDockerComposeDown
         initDockerComposeBuild
-        initDockerComposeRun mysql sh ./srv/scripts/init.sh 2>&1 
+        initDockerComposeRun web bash sh "/mysql/scripts/init.sh" 2>&1 
         ;;
     start)
         initDockerComposeRun -d "${SUBCOMMAND_ARGS[${@}]}"
@@ -205,13 +205,13 @@ EOF
     reset)
         initDockerComposeDown "${SUBCOMMAND_ARGS[${@}]}"
 
-        initDockerComposeRun mysql  sh "$(pwd)/srv/scripts/init.sh"
+        initDockerComposeRun web bash sh `/mysql/scripts/init.sh`
         initDockerComposeRun -d "${SUBCOMMAND_ARGS[${@}]}"
         ;;
     reset-test)
         initDockerComposeDown  "${PROJECT}test"
 
-        testDockerComposeRun mysql sh "$(pwd)/srv/scripts/init.sh" 
+        testDockerComposeRun web bash sh `/mysql/scripts/init.sh` 
         testDockerCompose up -d
         ;;
     test)
@@ -245,13 +245,13 @@ EOF
         testDockerCompose build 2>&1
         if [ x$reset_db != x0 ]; then
             echo -e "\n> Rebuilding test db"
-            testDockerComposeRun mysql  sh "$(pwd)/srv/scripts/init.sh" 2>&1 
+            testDockerComposeRun web bash sh `/mysql/srv/scripts/init.sh` 2>&1 
         fi
 
         testDockerCompose start -d 2>&1
 
         echo -e "\n> Running Web Test Suite"
-        testDockerComposeRun web "$(pwd)/vendor/phpunit/phpunit/phpunit" --testdox --do-not-cache-result --testsuite 
+        testDockerComposeRun web `/vendor/phpunit/phpunit/phpunit` --testdox --do-not-cache-result --testsuite 
         Unit,Integration,Functional
         test_result=$?
 
@@ -264,7 +264,7 @@ EOF
         testDockerCompose stop 2>&1 
 
         # Cleanup docker related leftovers
-        docker rm -f $(docker ps -a | grep "${PROJECT}test" | awk $"(print $1)")
+        docker rm -f $(docker ps -a | grep "${PROJECT}"test | awk $(print) "$1")
         docker network rm "${PROJECT}test"
         clearContainerCache
 
